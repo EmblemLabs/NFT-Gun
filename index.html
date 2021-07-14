@@ -1,0 +1,351 @@
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+  <!-- <link rel="stylesheet" type="text/css" href="/style.css"> -->
+  <link href='https://fonts.googleapis.com/css?family=Alegreya+Sans:300italic' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://getbootstrap.com/2.3.2/assets/css/bootstrap.css">
+  <link rel="stylesheet" href="https://getbootstrap.com/2.3.2/assets/css/bootstrap-responsive.css">
+  
+  <style>
+    .asset_thumb {
+      max-height: 200px;
+      min-width: 120px;
+      padding: 10;
+    }
+
+    body {
+      font-family: 'Alegreya Sans', sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+  <button style="float:right;margin:10" id="connectButton" onclick="refreshMetamask()">Connect</button>
+    <div style="padding:10" class="tabbable"> <!-- Only required for left/right tabs -->
+      <ul class="nav nav-tabs">
+        <li class="active"><a href="#tab1" data-toggle="tab">My NFT's</a></li>
+        <li><a href="#tab2" data-toggle="tab">For Sale</a></li>
+      </ul>
+      <div class="tab-content">
+        <div class="tab-pane active" id="tab1">
+          <div class="my__list" style="width: 50%; float: left"></div>
+        </div>
+        <div class="tab-pane" id="tab2">
+          <div class="forsale__list" style="width: 50%; float: left"></div>
+        </div>
+      </div>
+    </div>
+  
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/gun/sea.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/gun/lib/open.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/gun/lib/webrtc.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/gun/lib/path.js"></script>
+  <script src="//cdn.ethers.io/lib/ethers-5.1.umd.min.js" type="text/javascript"></script>
+  <script src="//cdn.jsdelivr.net/npm/circular-json@0.5.9/build/circular-json.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/web3/3.0.0-rc.5/web3.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+
+
+  <script>
+
+    let gun = Gun(['https://emblem-gun.herokuapp.com/gun']);
+    let API = 'https://gun-api-ev.herokuapp.com'//'http://127.0.0.1:3000'
+    let loggedIn = false
+    let accounts = []
+    let assets = []
+    let forSale = []
+    let users = {}, blockchains = {}, me, ROOT, DATA_PATH, USER_DATABASE, CHAIN_DB, signature
+
+    ethereum.on('accountsChanged', function (accounts) {
+      console.log("changed")
+      getOpenSeaAssets(_assets => {
+                assets = convertOpenSeaToGun(_assets)
+                displayMyAssets()
+              })
+    })
+
+
+    init()
+
+    function init() {
+      getRemoteGunPaths(() => {
+        connect(() => {          
+          if (!signature) {
+            sign(sig => {              
+              getOpenSeaAssets(_assets => {
+                assets = convertOpenSeaToGun(_assets)
+              })
+            })
+          } else {
+            getOpenSeaAssets(_assets => {
+                assets = convertOpenSeaToGun(_assets)
+                displayMyAssets()
+              })
+          }
+        })
+        gun.get(ROOT).map().get(DATA_PATH).open(all => {
+          users = all[USER_DATABASE]
+          blockchains = all[CHAIN_DB]
+        })
+
+        gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).map().get("contracts").open(item => {
+          forSale = []
+          Object.keys(item).forEach(k => {
+            if (item[k]['For Sale']) {
+              let unique = forSale.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
+              if (unique) {
+                forSale.push(item[k])
+              }
+            }
+          })
+          displayMyAssets()
+          displayForSaleAssets()
+        })
+      })
+    }
+
+    function connect(cb) {
+      ethereum
+        .request({ method: 'eth_requestAccounts' })
+        .then(async (_accounts) => {
+          accounts = _accounts
+          account = ethers.utils.getAddress(accounts[0])
+          signature = localStorage.getItem(account+":signature")
+          let anyUsers = await gun.path(ROOT).map().get(DATA_PATH)
+          if (anyUsers) {
+            me = await gun.path(ROOT).map().path(DATA_PATH + "." + USER_DATABASE + "." + account)
+            console.log('found', me)
+            if (!me) {
+              registerAccount()
+            } else {
+              loggedIn = true
+              return cb(true)
+            }
+          } else {
+            registerAccount()
+          }
+        })
+        .catch((err) => {
+          if (err.code === 4001) {
+            // EIP-1193 userRejectedRequest error
+            // If this happens, the user rejected the connection request.
+            console.log('Please connect to MetaMask.');
+          } else {
+            console.error(err);
+          }
+        });
+    }
+
+    function getPublicKey(cb) {
+      ethereum
+        .request({
+          method: 'eth_getEncryptionPublicKey',
+          params: [accounts[0]], // you must have access to the specified account
+        })
+        .then((result) => {
+          return cb(result)
+        })
+        .catch((error) => {
+          if (error.code === 4001) {
+            // EIP-1193 userRejectedRequest error
+            console.log("We can't encrypt anything without the key.");
+          } else {
+            console.error(error);
+          }
+        });
+    }
+
+    function sign(cb) {
+      // console.log('Verify: ' + account)
+      ethereum
+        .request({ method: 'personal_sign', params: [account, 'Verify: ' + account] })
+        .then((sig) => {
+          signature = sig
+          localStorage.setItem(account+":signature", sig)
+          return cb(sig)
+        })
+    }
+
+    function registerAccount() {
+      getPublicKey(pubKey => {
+        console.log('pubKey', pubKey)
+        setTimeout(() => {
+          sign(sig => {
+            signature = sig
+            sendRegistrationRequest(pubKey, sig, ()=>{
+              init()
+            })            
+          })
+        }, 500)
+      })
+    }
+
+    function sendRegistrationRequest(pubKey, sig, cb) {
+      var myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+
+      var raw = JSON.stringify({
+        "user": {
+          "address": account,
+          "pubKey": pubKey,
+          "username": "Username"
+        },
+        "signature": sig
+      });
+
+      var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+      };
+
+      fetch(API + "/user", requestOptions)
+        .then(response => response.text())
+        .then(result => {
+          console.log('reg result', result)
+          // connect(() => { })
+          return cb()
+        })
+        .catch(error => console.log('error', error));
+    }
+
+    function getRemoteGunPaths(cb) {
+      var requestOptions = {
+        method: 'GET',
+        redirect: 'follow'
+      };
+
+      fetch(API + "/path", requestOptions)
+        .then(response => response.json())
+        .then(result => {
+          ROOT = "~@" + result.root
+          DATA_PATH = result.data
+          USER_DATABASE = result.users
+          CHAIN_DB = result.blockchains
+          return cb()
+        })
+        .catch(error => console.log('error', error));
+    }
+
+    function getOpenSeaAssets(cb, offset = 0, limit = 100) {
+      var myHeaders = new Headers();
+
+      var requestOptions = {
+        method: 'GET',
+        headers: myHeaders,
+        redirect: 'follow'
+      };
+
+      fetch("https://api.opensea.io/api/v1/assets?owner=" + me.address + "&order_direction=desc&offset=" + offset + "&limit=" + limit, requestOptions)
+        .then(response => response.json())
+        .then(result => { return cb(result) })
+        .catch(error => console.log('error', error));
+    }
+
+    function listAsset(asset) {
+      var myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+      if (!signature) {
+        sign(sig => {
+          signature = sig
+          return performCall()
+        })
+      } else {
+        return performCall()
+      }
+      function performCall() {
+        var raw = JSON.stringify({
+          "address": me.address,
+          "signature": signature,
+          "listing": asset
+        });
+
+        var requestOptions = {
+          method: 'POST',
+          headers: myHeaders,
+          body: raw,
+          redirect: 'follow'
+        };
+
+        fetch(API+"/list", requestOptions)
+          .then(response => response.text())
+          // .then(result => console.log(result))
+          .catch(error => console.log('error', error));
+      }
+    }
+
+    function offerAsset(asset) {
+      console.log("Asset", asset)
+    }
+
+    function unlistAsset(asset) {
+      var myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+      if (!signature) {
+        sign(sig => {
+          signature = sig
+          return performCall()
+        })
+      } else {
+        return performCall()
+      }
+      function performCall() {
+        var raw = JSON.stringify({
+          "address": me.address,
+          "signature": signature,
+          "listing": asset
+        });
+
+        var requestOptions = {
+          method: 'DELETE',
+          headers: myHeaders,
+          body: raw,
+          redirect: 'follow'
+        };
+
+        fetch(API+"/list", requestOptions)
+          .then(response => response.text())
+          // .then(result => console.log(result))
+          .catch(error => console.log('error', error));
+      }
+    }
+
+    function convertOpenSeaToGun(_assets) {
+      return _assets.assets.map(asset => { return { chainId: 1, tokenId: asset.token_id, contract: asset.asset_contract.address, metadata: asset.token_metadata, image_url: asset.image_url, image_preview_url: asset.image_preview_url, image_thumbnail_url: asset.image_thumbnail_url, image_original_url: asset.image_original_url, animation_url: asset.animation_url, name: asset.name, description: asset.description } })
+    }
+
+    function displayMyAssets() {
+      var template = Handlebars.compile("<div id=\"myAssets-{{index}}\"><img class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p><button onclick=\"{{action}}Asset(assets[{{index}}])\">{{action}}</button><hr/></div>")
+      $(".my__list").html('')
+      assets.forEach((asset, index) => {
+        let found = forSale.filter(item=>{ return item.chainId == assets[index].chainId && item.contract == assets[index].contract && item.tokenId == assets[index].tokenId}).length > 0
+        $(".my__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: found? 'unlist' : 'list' }))
+      })
+    }
+
+    function displayForSaleAssets() {
+      var template = Handlebars.compile("<div id=\"forSale-{{index}}\"><img class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p> <button onclick=\"offerAsset(forSale[{{index}}])\">{{action}}</button><hr/></div>")
+      $(".forsale__list").html('')
+      forSale.forEach((asset, index) => {
+        // let found = forSale.filter(item=>{ return item.chainId == assets[index].chainId && item.contract == assets[index].contract && item.tokenId == assets[index].tokenId}).length > 0
+        $(".forsale__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer' }))
+      })
+    }
+    
+    async function refreshMetamask(){
+      await ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{
+          eth_accounts: {},
+        }]
+      });
+    }
+  </script>
+</body>
+
+</html>
