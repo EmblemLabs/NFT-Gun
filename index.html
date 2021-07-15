@@ -4,8 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
   <!-- <link rel="stylesheet" type="text/css" href="/style.css"> -->
   <link href='https://fonts.googleapis.com/css?family=Alegreya+Sans:300italic' rel='stylesheet' type='text/css'>
-  <link rel="stylesheet" href="https://getbootstrap.com/2.3.2/assets/css/bootstrap.css">
-  <link rel="stylesheet" href="https://getbootstrap.com/2.3.2/assets/css/bootstrap-responsive.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" >
   
   <style>
     .asset_thumb {
@@ -16,6 +15,13 @@
 
     body {
       font-family: 'Alegreya Sans', sans-serif;
+    }
+
+    .modal:nth-of-type(even) {
+        z-index: 1062 !important;
+    }
+    .modal-backdrop.show:nth-of-type(even) {
+        z-index: 1061 !important;
     }
   </style>
 </head>
@@ -40,14 +46,37 @@
     <div class="tempModal"></div>
     <!-- Modal -->
     <script id="offer-modal" type="text/x-handlebars-template">
-        <div class="modal fade" id="offerModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal fade" id="{{modal.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <h3 class="modal-title" id="exampleModalLabel">{{asset.name}}</h3>                
+                <table class="full" style="width:100%">
+                  <tr>
+                    <th>
+                      <table class="full" style="width:100%">
+                        <tr>
+                          <th style="font-size: small;text-align:left" onclick="previousAsset()"><a href="#previous"><- Previous</a></th>
+                          <th style="text-align:center"> My NFTs </th>
+                          <th style="font-size: small;;text-align:right" onclick="nextAsset()"><a  href="#next">Next -></a></th>
+                        </tr>
+                      </table>
+                    </th>                                       
+                  </tr>
+                  <tr>
+                    <th style="width:50%" class="offer_name"><h3 class="modal-title offer-display-name" id="exampleModalLabel">{{assets.0.name}}</h3></th>
+                    <th style="width:50%"><h3 class="modal-title" id="exampleModalLabel">{{asset.name}}</h3></th>
+                  </tr>
+                </table>
+                                
               </div>
-              <div class="modal-body">
-                <{{media}} style="max-height: 350px" src="{{asset.image_url}}" />
+              <div class="modal-body">                
+                <table class="full" style="width:100%">
+                  <tr>
+                    <th style="text-align: revert;" class="offer_display"><img class="offer_image" style="max-height: 350px; width: auto;" src="{{assets.0.image_url}}" /></th>
+                    <th style="text-align: revert;"><{{media}} class="ask_image" style="max-height: 350px" src="{{asset.image_url}}" /></th>
+                  </tr>
+                </table>
+                
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Never Mind</button>
@@ -58,8 +87,11 @@
         </div>
       </script>
   
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-  <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script> -->
   <script src="//cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="//cdn.jsdelivr.net/npm/gun/sea.js"></script>
   <script src="//cdn.jsdelivr.net/npm/gun/lib/open.js"></script>
@@ -340,6 +372,10 @@
     function convertOpenSeaToGun(_assets) {
       return _assets.assets.map(asset => { return { chainId: 1, tokenId: asset.token_id, contract: asset.asset_contract.address, metadata: asset.token_metadata, image_url: asset.image_url, image_preview_url: asset.image_preview_url, image_thumbnail_url: asset.image_thumbnail_url, image_original_url: asset.image_original_url, animation_url: asset.animation_url, name: asset.name, description: asset.description } })
     }
+  </script>
+
+  <script>
+    let offeringAsset = 0
 
     function displayMyAssets() {
       var template = Handlebars.compile("<div id=\"myAssets-{{index}}\"><{{media}} class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p><button class=\"btn btn-{{buttonStyle}}\" onclick=\"{{action}}Asset(assets[{{index}}])\">{{action}}</button><hr/></div>")
@@ -371,10 +407,38 @@
     function popModal(asset) {
       var template = $('#offer-modal').html();
       var templateScript = Handlebars.compile(template);
-      var context = { "asset" : asset, media: asset.animation_url? "video loop autoplay": "img" };
+      var context = { "asset" : asset, media: asset.animation_url? "video loop autoplay": "img", modal: {id: "offerModal"}, assets: assets };
       var html = templateScript(context);
       $(".tempModal").html(html)
       $("#offerModal").modal('show')
+      setTimeout(()=>{
+          $(".offer_image").css("max-width", $(".ask_image").width())
+          $(".offer_display").css("min-width", $(".ask_image").width())
+          $(".offer_display").css("max-width", $(".ask_image").width())
+          $(".modal-content").width($(".ask_image").width() * 2 + 60)
+        }, 250)            
+    }
+
+    function nextAsset() {
+      if (offeringAsset ==assets.length -1) {
+        offeringAsset = 0
+      } else {
+        offeringAsset++
+      }
+      let asset = assets[offeringAsset]
+      $(".offer_image").attr("src", asset.image_url)
+      $(".offer-display-name").text(asset.name)
+    }
+
+    function previousAsset() {
+      if (offeringAsset ==0) {
+        offeringAsset = assets.length-1
+      } else {
+        offeringAsset--
+      }
+      let asset = assets[offeringAsset]
+      $(".offer_image").attr("src", asset.image_url)
+      $(".offer-display-name").text(asset.name)
     }
   </script>
 </body>
