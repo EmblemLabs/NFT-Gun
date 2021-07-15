@@ -4,8 +4,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
   <!-- <link rel="stylesheet" type="text/css" href="/style.css"> -->
   <link href='https://fonts.googleapis.com/css?family=Alegreya+Sans:300italic' rel='stylesheet' type='text/css'>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" >
-  
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+
   <style>
     .asset_thumb {
       max-height: 200px;
@@ -18,63 +18,86 @@
     }
 
     .modal:nth-of-type(even) {
-        z-index: 1062 !important;
+      z-index: 1062 !important;
     }
+
     .modal-backdrop.show:nth-of-type(even) {
-        z-index: 1061 !important;
+      z-index: 1061 !important;
+    }
+
+    .truncate {
+      width: 250px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nft-nav-tool {
+      width: 33%;
+    }
+    .offer-image {
+      border-radius: 8px;
+    }
+    .ask-image {
+      border-radius: 8px;
     }
   </style>
 </head>
 
 <body>
   <button style="float:right;margin:10" id="connectButton" onclick="refreshMetamask()">Connect</button>
-    <div style="padding:10" class="tabbable"> <!-- Only required for left/right tabs -->
-      <ul class="nav nav-tabs">
-        <li class="active"><a href="#tab1" data-toggle="tab">My NFT's</a></li>
-        <li><a href="#tab2" data-toggle="tab">For Sale</a></li>
-      </ul>
-      <div class="tab-content">
-        <div class="tab-pane active" id="tab1">
-          <div class="my__list" style="width: 50%; float: left"></div>
-        </div>
-        <div class="tab-pane" id="tab2">
-          <div class="forsale__list" style="width: 50%; float: left"></div>
-        </div>
+  <div style="padding:10" class="tabbable">
+    <!-- Only required for left/right tabs -->
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="#tab1" data-toggle="tab">My NFT's</a></li>
+      <li><a href="#tab2" data-toggle="tab">For Sale</a></li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane active" id="tab1">
+        <div class="my__list" style="width: 50%; float: left"></div>
+      </div>
+      <div class="tab-pane" id="tab2">
+        <div class="forsale__list" style="width: 50%; float: left"></div>
       </div>
     </div>
-    
-    <div class="tempModal"></div>
-    <!-- Modal -->
-    <script id="offer-modal" type="text/x-handlebars-template">
+  </div>
+
+  <div class="tempModal"></div>
+  <!-- Modal -->
+  <script id="offer-modal" type="text/x-handlebars-template">
         <div class="modal fade" id="{{modal.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
-            <div class="modal-content">
+            <div style="min-width:530px" class="modal-content">
               <div class="modal-header">
-                <table class="full" style="width:100%;position:fixed">
+                <table class="full" style="width:100%;">
                   <tr>
-                    <th style="font-size: small;text-align:left" onclick="previousAsset()"><a href="#previous"><- Previous</a></th>
-                    <th style="text-align:center"> My NFTs {{mine}} </th>
-                    <th style="font-size: small;;text-align:right" onclick="nextAsset()"><a  href="#next">Next -></a></th>
+                    <th class="nft-nav-tool" style="font-size: small;text-align:left" onclick="previousAsset()"><a href="#previous"><- Previous</a></th>
+                    <th class="nft-nav-tool" style="text-align:center"> My NFTs {{mine}} </th>
+                    <th class="nft-nav-tool" style="font-size: small;;text-align:right" onclick="nextAsset()"><a  href="#next">Next -></a></th>
                   </tr>
                 </table>
-                <table class="full" style="width:100%;margin-top:10">
+                
+              </div>
+              <div class="modal-body">
+                <table class="full" style="width:100%;margin-top:0">
                   <tr>
                     <th>
                       
                     </th>                                       
                   </tr>
                   <tr>
-                    <th style="width:50%" class="offer_name"><h3 class="modal-title offer-display-name" id="exampleModalLabel">{{assets.0.name}}</h3></th>
-                    <th style="width:50%"><h3 class="modal-title" id="exampleModalLabel">{{asset.name}}</h3></th>
+                    <th style="width:50%" class="offer_name">
+                      <h3 class="modal-title offer-display-name truncate" id="exampleModalLabel" data-toggle="tooltip" data-placement="top" title="{{assets.0.name}}">{{assets.0.name}}</h3>
+                    </th>
+                    <th style="width:50%">
+                      <h3 class="modal-title truncate" id="exampleModalLabel">{{asset.name}}</h3>
+                    </th>
                   </tr>
-                </table>
-                                
-              </div>
-              <div class="modal-body">                
+                </table>             
                 <table class="full" style="width:100%">
                   <tr>
-                    <th style="text-align: revert;" class="offer_display"><img class="offer_image" style="max-height: 350px; width: auto;" src="{{assets.0.image_url}}" /></th>
-                    <th style="text-align: revert;"><{{media}} class="ask_image" style="max-height: 350px" src="{{asset.image_url}}" /></th>
+                    <th style="text-align: revert;" class="offer_display"><img class="offer_image" style="max-height: 350px; width: auto;border-radius: 6px;" src="{{assets.0.image_url}}" /></th>
+                    <th style="text-align: revert;"><{{media}} class="ask_image" style="max-height: 350px;border-radius: 6px;" src="{{asset.image_url}}" /></th>
                   </tr>
                 </table>
                 
@@ -87,10 +110,17 @@
           </div>
         </div>
       </script>
-  
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
   <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script> -->
   <script src="//cdn.jsdelivr.net/npm/gun/gun.js"></script>
@@ -117,9 +147,9 @@
     ethereum.on('accountsChanged', function (accounts) {
       console.log("changed")
       getOpenSeaAssets(_assets => {
-                assets = convertOpenSeaToGun(_assets)
-                displayMyAssets()
-              })
+        assets = convertOpenSeaToGun(_assets)
+        displayMyAssets()
+      })
     })
 
 
@@ -127,18 +157,18 @@
 
     function init() {
       getRemoteGunPaths(() => {
-        connect(() => {          
+        connect(() => {
           if (!signature) {
-            sign(sig => {              
+            sign(sig => {
               getOpenSeaAssets(_assets => {
                 assets = convertOpenSeaToGun(_assets)
               })
             })
           } else {
             getOpenSeaAssets(_assets => {
-                assets = convertOpenSeaToGun(_assets)
-                displayMyAssets()
-              })
+              assets = convertOpenSeaToGun(_assets)
+              displayMyAssets()
+            })
           }
         })
         gun.get(ROOT).map().get(DATA_PATH).open(all => {
@@ -168,7 +198,7 @@
         .then(async (_accounts) => {
           accounts = _accounts
           account = ethers.utils.getAddress(accounts[0])
-          signature = localStorage.getItem(account+":signature")
+          signature = localStorage.getItem(account + ":signature")
           let anyUsers = await gun.path(ROOT).map().get(DATA_PATH)
           if (anyUsers) {
             me = await gun.path(ROOT).map().path(DATA_PATH + "." + USER_DATABASE + "." + account)
@@ -219,7 +249,7 @@
         .request({ method: 'personal_sign', params: [account, 'Verify: ' + account] })
         .then((sig) => {
           signature = sig
-          localStorage.setItem(account+":signature", sig)
+          localStorage.setItem(account + ":signature", sig)
           return cb(sig)
         })
     }
@@ -230,9 +260,9 @@
         setTimeout(() => {
           sign(sig => {
             signature = sig
-            sendRegistrationRequest(pubKey, sig, ()=>{
+            sendRegistrationRequest(pubKey, sig, () => {
               init()
-            })            
+            })
           })
         }, 500)
       })
@@ -326,7 +356,7 @@
           redirect: 'follow'
         };
 
-        fetch(API+"/list", requestOptions)
+        fetch(API + "/list", requestOptions)
           .then(response => response.text())
           // .then(result => console.log(result))
           .catch(error => console.log('error', error));
@@ -363,7 +393,7 @@
           redirect: 'follow'
         };
 
-        fetch(API+"/list", requestOptions)
+        fetch(API + "/list", requestOptions)
           .then(response => response.text())
           // .then(result => console.log(result))
           .catch(error => console.log('error', error));
@@ -382,8 +412,8 @@
       var template = Handlebars.compile("<div id=\"myAssets-{{index}}\"><{{media}} class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p><button class=\"btn btn-{{buttonStyle}}\" onclick=\"{{action}}Asset(assets[{{index}}])\">{{action}}</button><hr/></div>")
       $(".my__list").html('')
       assets.forEach((asset, index) => {
-        let found = forSale.filter(item=>{ return item.chainId == assets[index].chainId && item.contract == assets[index].contract && item.tokenId == assets[index].tokenId}).length > 0
-        $(".my__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: found? 'unlist' : 'list' , buttonStyle: found? 'warning' : 'success', media: asset.animation_url? "video loop autoplay": "img" }))
+        let found = forSale.filter(item => { return item.chainId == assets[index].chainId && item.contract == assets[index].contract && item.tokenId == assets[index].tokenId }).length > 0
+        $(".my__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: found ? 'unlist' : 'list', buttonStyle: found ? 'warning' : 'success', media: asset.animation_url ? "video loop autoplay" : "img" }))
       })
     }
 
@@ -391,14 +421,14 @@
       var template = Handlebars.compile("<div id=\"forSale-{{index}}\"><{{media}} class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p> <button type=\"button\" class=\"btn btn-primary\" onclick=\"offerAsset(forSale[{{index}}])\">{{action}}</button><hr/></div>")
       $(".forsale__list").html('')
       forSale.forEach((asset, index) => {
-        let found = assets.filter(item=>{ return item.chainId == forSale[index].chainId && item.contract == forSale[index].contract && item.tokenId == forSale[index].tokenId}).length > 0
+        let found = assets.filter(item => { return item.chainId == forSale[index].chainId && item.contract == forSale[index].contract && item.tokenId == forSale[index].tokenId }).length > 0
         if (!found) {
-          $(".forsale__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer', media: asset.animation_url? "video loop autoplay": "img" }))
+          $(".forsale__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer', media: asset.animation_url ? "video loop autoplay" : "img" }))
         }
       })
     }
-    
-    async function refreshMetamask(){
+
+    async function refreshMetamask() {
       await ethereum.request({
         method: 'wallet_requestPermissions',
         params: [{
@@ -410,20 +440,32 @@
     function popModal(asset) {
       var template = $('#offer-modal').html();
       var templateScript = Handlebars.compile(template);
-      var context = { "asset" : asset, media: asset.animation_url? "video loop autoplay": "img", modal: {id: "offerModal"}, assets: assets };
+      var context = { "asset": asset, media: asset.animation_url ? "video loop autoplay" : "img", modal: { id: "offerModal" }, assets: assets };
       var html = templateScript(context);
       $(".tempModal").html(html)
+      $("#offerModal").on('shown.bs.modal', function (e) {
+        console.log("Visible")
+        $('[data-toggle="tooltip"]').tooltip()
+        $(".modal-content").width($(".ask_image").width() * 2 + 60)
+
+        $(".offer_image").css("max-width", $(".ask_image").width())
+        $(".offer_display").css("min-width", $(".ask_image").width())
+        $(".offer_display").css("max-width", $(".ask_image").width())
+
+        $(".full:contains('My')").width($(".modal-content").width() - 30)
+
+        $("#offerModal").on('hidden.bs.modal', function (e) {
+          offeringAsset = 0
+        })
+      })
       $("#offerModal").modal('show')
-      setTimeout(()=>{
-          $(".offer_image").css("max-width", $(".ask_image").width())
-          $(".offer_display").css("min-width", $(".ask_image").width())
-          $(".offer_display").css("max-width", $(".ask_image").width())
-          $(".modal-content").width($(".ask_image").width() * 2 + 60)
-        }, 250)            
+      // setTimeout(() => {
+        
+      // }, 250)
     }
 
     function nextAsset() {
-      if (offeringAsset ==assets.length -1) {
+      if (offeringAsset == assets.length - 1) {
         offeringAsset = 0
       } else {
         offeringAsset++
@@ -431,18 +473,26 @@
       let asset = assets[offeringAsset]
       $(".offer_image").attr("src", asset.image_url)
       $(".offer-display-name").text(asset.name)
+      $(".offer-display-name").attr('data-original-title', asset.name)
     }
 
     function previousAsset() {
-      if (offeringAsset ==0) {
-        offeringAsset = assets.length-1
+      if (offeringAsset == 0) {
+        offeringAsset = assets.length - 1
       } else {
         offeringAsset--
       }
       let asset = assets[offeringAsset]
       $(".offer_image").attr("src", asset.image_url)
       $(".offer-display-name").text(asset.name)
+      $(".offer-display-name").attr('data-original-title', asset.name)
     }
+
+    $(document).ready(function () {
+      $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+      })
+    })
   </script>
 </body>
 
