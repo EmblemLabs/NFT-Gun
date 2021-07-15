@@ -44,17 +44,14 @@
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">{{asset.name}}</h5>
-                <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button> -->
+                <h3 class="modal-title" id="exampleModalLabel">{{asset.name}}</h3>                
               </div>
               <div class="modal-body">
-                <img style="max-height: 350px" src="{{asset.image_url}}" />
+                <{{media}} style="max-height: 350px" src="{{asset.image_url}}" />
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Never Mind</button>
+                <button type="button" class="btn btn-success">Make Offer</button>
               </div>
             </div>
           </div>
@@ -345,20 +342,20 @@
     }
 
     function displayMyAssets() {
-      var template = Handlebars.compile("<div id=\"myAssets-{{index}}\"><img class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p><button onclick=\"{{action}}Asset(assets[{{index}}])\">{{action}}</button><hr/></div>")
+      var template = Handlebars.compile("<div id=\"myAssets-{{index}}\"><{{media}} class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p><button class=\"btn btn-{{buttonStyle}}\" onclick=\"{{action}}Asset(assets[{{index}}])\">{{action}}</button><hr/></div>")
       $(".my__list").html('')
       assets.forEach((asset, index) => {
         let found = forSale.filter(item=>{ return item.chainId == assets[index].chainId && item.contract == assets[index].contract && item.tokenId == assets[index].tokenId}).length > 0
-        $(".my__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: found? 'unlist' : 'list' }))
+        $(".my__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: found? 'unlist' : 'list' , buttonStyle: found? 'warning' : 'success', media: asset.animation_url? "video loop autoplay": "img" }))
       })
     }
 
     function displayForSaleAssets() {
-      var template = Handlebars.compile("<div id=\"forSale-{{index}}\"><img class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p> <button type=\"button\" class=\"btn btn-primary\" onclick=\"offerAsset(forSale[{{index}}])\">{{action}}</button><hr/></div>")
+      var template = Handlebars.compile("<div id=\"forSale-{{index}}\"><{{media}} class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p> <button type=\"button\" class=\"btn btn-primary\" onclick=\"offerAsset(forSale[{{index}}])\">{{action}}</button><hr/></div>")
       $(".forsale__list").html('')
       forSale.forEach((asset, index) => {
         // let found = forSale.filter(item=>{ return item.chainId == assets[index].chainId && item.contract == assets[index].contract && item.tokenId == assets[index].tokenId}).length > 0
-        $(".forsale__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer' }))
+        $(".forsale__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer', media: asset.animation_url? "video loop autoplay": "img" }))
       })
     }
     
@@ -374,7 +371,7 @@
     function popModal(asset) {
       var template = $('#offer-modal').html();
       var templateScript = Handlebars.compile(template);
-      var context = { "asset" : asset };
+      var context = { "asset" : asset, media: asset.animation_url? "video loop autoplay": "img" };
       var html = templateScript(context);
       $(".tempModal").html(html)
       $("#offerModal").modal('show')
