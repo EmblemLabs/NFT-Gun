@@ -50,16 +50,17 @@
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <table class="full" style="width:100%">
+                <table class="full" style="width:100%;position:fixed">
+                  <tr>
+                    <th style="font-size: small;text-align:left" onclick="previousAsset()"><a href="#previous"><- Previous</a></th>
+                    <th style="text-align:center"> My NFTs {{mine}} </th>
+                    <th style="font-size: small;;text-align:right" onclick="nextAsset()"><a  href="#next">Next -></a></th>
+                  </tr>
+                </table>
+                <table class="full" style="width:100%;margin-top:10">
                   <tr>
                     <th>
-                      <table class="full" style="width:100%">
-                        <tr>
-                          <th style="font-size: small;text-align:left" onclick="previousAsset()"><a href="#previous"><- Previous</a></th>
-                          <th style="text-align:center"> My NFTs </th>
-                          <th style="font-size: small;;text-align:right" onclick="nextAsset()"><a  href="#next">Next -></a></th>
-                        </tr>
-                      </table>
+                      
                     </th>                                       
                   </tr>
                   <tr>
@@ -390,8 +391,10 @@
       var template = Handlebars.compile("<div id=\"forSale-{{index}}\"><{{media}} class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p> <button type=\"button\" class=\"btn btn-primary\" onclick=\"offerAsset(forSale[{{index}}])\">{{action}}</button><hr/></div>")
       $(".forsale__list").html('')
       forSale.forEach((asset, index) => {
-        // let found = forSale.filter(item=>{ return item.chainId == assets[index].chainId && item.contract == assets[index].contract && item.tokenId == assets[index].tokenId}).length > 0
-        $(".forsale__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer', media: asset.animation_url? "video loop autoplay": "img" }))
+        let found = assets.filter(item=>{ return item.chainId == forSale[index].chainId && item.contract == forSale[index].contract && item.tokenId == forSale[index].tokenId}).length > 0
+        if (!found) {
+          $(".forsale__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer', media: asset.animation_url? "video loop autoplay": "img" }))
+        }
       })
     }
     
