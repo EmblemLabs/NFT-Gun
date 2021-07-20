@@ -45,6 +45,7 @@
 </head>
 
 <body>
+  <div style="text-align:right;margin:5px;" class="account-display"></div>
   <button style="float:right;margin:10" id="connectButton" onclick="refreshMetamask()">Connect</button>
   <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item">
@@ -237,6 +238,7 @@
         .then(async (_accounts) => {
           accounts = _accounts
           account = ethers.utils.getAddress(accounts[0])
+          $(".account-display").html(account)
           signature = localStorage.getItem(account + ":signature")
           if (!signature) {
             sign(sig => {
@@ -583,7 +585,9 @@ async function authUser(alias, password, cb){
 
   <script id="users-tempate" type="text/x-handlebars-template">
     <div id="asset-{{index}}">
-      <p><a href="#search?address={{asset.address}}" onclick="navAndSearchForAddress('{{asset.address}}', {{index}})">{{asset.address}}</a></p>
+      <p>
+        <a href="#search?address={{asset.address}}" onclick="navAndSearchForAddress('{{asset.address}}', {{index}})">{{asset.address}}</a>
+      </p>
       <hr/>
     </div>
   </script>
