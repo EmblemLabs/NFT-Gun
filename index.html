@@ -53,6 +53,12 @@
     <li class="nav-item">
       <a class="nav-link active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="true">For Sale</a>
     </li>
+    <li class="nav-item">
+      <a class="nav-link" id="wants-tab" data-toggle="tab" href="#wants" role="tab" aria-controls="wants" aria-selected="false">Wants</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="search-tab" data-toggle="tab" href="#search" role="tab" aria-controls="search" aria-selected="false">Search</a>
+    </li>
   </ul>
   <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -60,6 +66,14 @@
     </div>
     <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
       <div class="forsale__list" style="width: 50%; float: left; padding:10px"></div>
+    </div>
+    <div class="tab-pane fade show" id="wants" role="tabpanel" aria-labelledby="wants-tab">
+      <div class="wants__list" style="width: 50%; float: left; padding:10px"></div>
+    </div>
+    <div class="tab-pane fade show" id="search" role="tabpanel" aria-labelledby="search-tab">
+      <input class="searchAddress" style="margin: 10" type="text" value="0xDEADBEEF"/>
+      <button onclick="search()">Fetch</button>
+      <div class="search__list" style="width: 50%; float: left; padding:10px"></div>
     </div>
   </div>
 
@@ -97,8 +111,11 @@
                 </table>             
                 <table class="full" style="width:100%">
                   <tr>
-                    <th style="text-align: revert;" class="offer_display"><img class="offer_image" style="max-height: 350px; width: auto;border-radius: 6px;" src="{{assets.0.image_url}}" /></th>
-                    <th style="text-align: revert;"><{{media}} class="ask_image" style="max-height: 150px;border-radius: 6px;" src="{{asset.image_url}}" /></th>
+                    <th style="text-align: revert;" class="offer_display">
+                      <img class="offer_image" style="max-height: 350px; width: auto;border-radius: 6px;" src="{{assets.0.image_url}}" />
+                      <!-- <video style="display:none" autoplay loop class="offer_image_animation" style="max-height: 350px; width: auto;border-radius: 6px;" src="{{assets.0.animation_url}}" ></video> -->
+                    </th>
+                    <th style="text-align: revert;"><{{media}} class="ask_image" style="max-height: 250px;border-radius: 6px;" src="{{asset.image_url}}" /></th>
                   </tr>
                 </table>
                 
@@ -129,6 +146,7 @@
   <script src="//cdn.jsdelivr.net/npm/gun/lib/open.js"></script>
   <script src="//cdn.jsdelivr.net/npm/gun/lib/webrtc.js"></script>
   <script src="//cdn.jsdelivr.net/npm/gun/lib/path.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/gun/lib/unset.js"></script>
   <script src="//cdn.ethers.io/lib/ethers-5.1.umd.min.js" type="text/javascript"></script>
   <script src="//cdn.jsdelivr.net/npm/circular-json@0.5.9/build/circular-json.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/web3/3.0.0-rc.5/web3.min.js"></script>
@@ -138,15 +156,16 @@
   <script>
 
     let gun = Gun(['https://emblem-gun.herokuapp.com/gun']);
-    let API = 'https://gun-api-ev.herokuapp.com'//'http://127.0.0.1:3000'
+    let API = 'http://127.0.0.1:3000'//'https://gun-api-ev.herokuapp.com'
     let loggedIn = false
     let accounts = []
     let assets = []
     let forSale = []
-    let users = {}, blockchains = {}, me, ROOT, DATA_PATH, USER_DATABASE, CHAIN_DB, signature
+    let users = {}, blockchains = {}, asks={}, me, ROOT, DATA_PATH, USER_DATABASE, CHAIN_DB, signature, userAlias, searchResults
 
     ethereum.on('accountsChanged', function (accounts) {
       console.log("changed")
+      location.reload()
       getOpenSeaAssets(_assets => {
         assets = convertOpenSeaToGun(_assets)
         displayMyAssets()
@@ -157,41 +176,80 @@
     init()
 
     function init() {
-      getRemoteGunPaths(() => {
+      getRemoteGunPaths(async () => {
         connect(() => {
-          if (!signature) {
-            sign(sig => {
-              getOpenSeaAssets(_assets => {
-                assets = convertOpenSeaToGun(_assets)
-              })
+          getOpenSeaAssets(_assets => {
+            assets = convertOpenSeaToGun(_assets)
+            gun.user().get("asks").open(all=>{
+              asks = getGunCollectionAsList(all)
+              displayAssetList(asks, '.wants__list')
             })
-          } else {
-            getOpenSeaAssets(_assets => {
-              assets = convertOpenSeaToGun(_assets)
-              displayMyAssets()
-            })
-          }
+            displayMyAssets()
+          })
         })
-        gun.get(ROOT).map().get(DATA_PATH).open(all => {
-          users = all[USER_DATABASE]
-          blockchains = all[CHAIN_DB]
+        gun.get(ROOT).map().get(DATA_PATH).get(USER_DATABASE).open(all => {
+          users = all
+        })
+        gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).open(all => {
+          blockchains = all
         })
 
-        gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).map().get("contracts").open(item => {
-          forSale = []
-          Object.keys(item).forEach(k => {
-            if (item[k]['For Sale']) {
-              let unique = forSale.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
-              if (unique) {
-                forSale.push(item[k])
-              }
-            }
-          })
+
+      gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).map().get("contracts").open(item => {
+          forSale = getGunCollectionAsList(item)
+                      .filter(item=>{return item['For Sale'] == true})
+          // forSale = []
+          // Object.keys(item).forEach(k => {
+          //   if (item[k]['For Sale']) {
+          //     let unique = forSale.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
+          //     if (unique) {
+          //       forSale.push(item[k])
+          //     }
+          //   }
+          // })
           displayMyAssets()
           displayForSaleAssets()
         })
       })
     }
+
+    function getGunCollectionAsList(collection) {
+      list = []
+      Object.keys(collection).forEach(k => {
+        list.push(collection[k])        
+      })
+      return list
+    }
+
+    // function getGunCollectionAsList(path, filter, cb){
+    //   // gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).map().get("contracts").open(item => {
+    //     gun.get(ROOT).map().path(path).open(item => {
+    //       collection = []
+    //       Object.keys(item).forEach(k => {
+    //         if (filter) {
+    //           if(item[k][filter]) {
+    //             let unique = collection.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
+    //             if (unique) {
+    //               collection.push(item[k])
+    //             }
+    //           }
+    //         } else {
+    //           let unique = collection.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
+    //             if (unique) {
+    //               collection.push(item[k])
+    //             }
+    //         }
+    //         // if (item[k]['For Sale']) {
+    //         //   let unique = collection.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
+    //         //   if (unique) {
+    //         //     collection.push(item[k])
+    //         //   }
+    //         // }
+    //       })
+    //       return cb(collection)
+          
+    //     })
+    // }
 
     function connect(cb) {
       ethereum
@@ -200,19 +258,34 @@
           accounts = _accounts
           account = ethers.utils.getAddress(accounts[0])
           signature = localStorage.getItem(account + ":signature")
-          let anyUsers = await gun.path(ROOT).map().get(DATA_PATH)
-          if (anyUsers) {
-            me = await gun.path(ROOT).map().path(DATA_PATH + "." + USER_DATABASE + "." + account)
-            console.log('found', me)
-            if (!me) {
-              registerAccount()
-            } else {
-              loggedIn = true
-              return cb(true)
-            }
+          if (!signature) {
+            sign(sig => {
+              registerAccounts()
+            })
           } else {
-            registerAccount()
+            registerAccounts()
           }
+          
+          function registerAccounts(){
+            userAlias = account + ':'+ DATA_PATH + '2'
+            createOrAuthUser(userAlias, signature, async ()=>{            
+              let anyUsers = await gun.path(ROOT).map().get(DATA_PATH).map()
+              if (anyUsers) {
+                me = await gun.path(ROOT).map().path(DATA_PATH + "." + USER_DATABASE + "." + account)
+                console.log('found', me)
+                if (!me) {
+                  registerAccount()
+                } else {
+                  loggedIn = true
+                  return cb(true)
+                }
+              } else {
+                registerAccount()
+              }
+            })
+          }
+          
+          
         })
         .catch((err) => {
           if (err.code === 4001) {
@@ -265,9 +338,50 @@
               init()
             })
           })
-        }, 500)
+        }, 1000)
       })
     }
+
+    async function createOrAuthUser(alias, password, cb) {
+      if (!cb) cb = ()=>{}
+      let found = await findUser(alias)
+      if (found) {
+          console.log("Found user, authing")
+          authUser(alias, password, cb)
+      } else {
+          console.log("Creating user")
+          createUser(alias, password, cb)
+      }
+}
+
+async function findUser(alias) {
+    let user = await gun.get("~@"+alias)
+    console.log(user)
+    if (user) {
+        console.log("found user", user)
+        return true
+    }
+    return false
+}
+
+async function createUser(alias, password, cb){
+    gun.user().create(alias, password, _user=>{
+        authUser(alias, password, cb)
+    })
+}
+async function authUser(alias, password, cb){
+    console.log("alias", alias)
+    console.log("password", password)
+    // setTimeout(()=>{
+      await gun.user().auth(alias, password, _user=>{
+        console.log("--------------------------------","Authed")
+        nodeUser = gun.user()
+        console.log("--------------------------------", "Node User", nodeUser)
+        return cb()
+      })
+    // }, 500)
+    
+}
 
     function sendRegistrationRequest(pubKey, sig, cb) {
       var myHeaders = new Headers();
@@ -317,7 +431,7 @@
         .catch(error => console.log('error', error));
     }
 
-    function getOpenSeaAssets(cb, offset = 0, limit = 100) {
+    function getOpenSeaAssets(cb, offset = 0, limit = 50, address = me.address) {
       var myHeaders = new Headers();
 
       var requestOptions = {
@@ -326,7 +440,7 @@
         redirect: 'follow'
       };
 
-      fetch("https://api.opensea.io/api/v1/assets?owner=" + me.address + "&order_direction=desc&offset=" + offset + "&limit=" + limit, requestOptions)
+      fetch("https://api.opensea.io/api/v1/assets?owner=" + address + "&order_direction=desc&offset=" + offset + "&limit=" + limit, requestOptions)
         .then(response => response.json())
         .then(result => { return cb(result) })
         .catch(error => console.log('error', error));
@@ -358,6 +472,34 @@
         };
 
         fetch(API + "/list", requestOptions)
+          .then(response => response.text())
+          // .then(result => console.log(result))
+          .catch(error => console.log('error', error));
+      }
+    }
+
+    function addAsset(asset) {
+      var myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+      if (!signature) {
+        sign(sig => {
+          signature = sig
+          return performCall()
+        })
+      } else {
+        return performCall()
+      }
+      function performCall() {
+        var raw = JSON.stringify(asset);
+
+        var requestOptions = {
+          method: 'POST',
+          headers: myHeaders,
+          body: raw,
+          redirect: 'follow'
+        };
+
+        fetch(API + "/asset", requestOptions)
           .then(response => response.text())
           // .then(result => console.log(result))
           .catch(error => console.log('error', error));
@@ -406,27 +548,110 @@
     }
   </script>
 
+  <script id="my-assets-list-tempate" type="text/x-handlebars-template">
+    <div id="myAssets-{{index}}">
+      {{#if animation_url}}
+        <video loop autoplay class="asset_thumb" src="{{thumb}}"></video>
+      {{else}}
+        <img class="asset_thumb" src="{{thumb}}"/>
+      {{/if}}
+        <p>{{name}}</p>
+        <button class="btn btn-{{buttonStyle}}" onclick="{{action}}Asset(assets[{{index}}])">{{action}}</button>
+        <hr/>
+    </div>
+  </script>
+
+  <script id="for-sale-list-tempate" type="text/x-handlebars-template">
+    <div id="forSale-{{index}}">
+      {{#if animation_url}}
+        <video loop autoplay class="asset_thumb" src="{{thumb}}"></video>
+      {{else}}
+        <img class="asset_thumb" src="{{thumb}}"/>
+      {{/if}}
+      <p>{{name}}</p>
+      <button type="button" class="btn btn-primary" onclick="offerAsset(forSale[{{index}}])">{{action}}</button>
+      <button type="button" class="btn btn-primary" onclick="want(forSale[{{index}}])">I Want</button>
+      <hr/>
+    </div>
+  </script>
+
+  <script id="search-tempate" type="text/x-handlebars-template">
+    <div id="search-{{index}}">
+      {{#if animation_url}}
+        <video loop autoplay class="asset_thumb" src="{{thumb}}"></video>
+      {{else}}
+        <img class="asset_thumb" src="{{thumb}}"/>
+      {{/if}}
+      <p>{{name}}</p>
+      <button type="button" class="btn btn-primary" onclick="offerAsset(searchResults[{{index}}])">{{action}}</button>
+      <button type="button" class="btn btn-primary" onclick="want(searchResults[{{index}}])">I Want</button>
+      <hr/>
+    </div>
+  </script>
+
+  <script id="asset-list-tempate" type="text/x-handlebars-template">
+    <div id="asset-{{index}}">
+      {{#if animation_url}}
+        <video loop autoplay class="asset_thumb" src="{{thumb}}"></video>
+      {{else}}
+        <img class="asset_thumb" src="{{thumb}}"/>
+      {{/if}}
+      <p>{{name}}</p>
+      <hr/>
+    </div>
+  </script>
+
   <script>
     let offeringAsset = 0
 
     function displayMyAssets() {
-      var template = Handlebars.compile("<div id=\"myAssets-{{index}}\"><{{media}} class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p><button class=\"btn btn-{{buttonStyle}}\" onclick=\"{{action}}Asset(assets[{{index}}])\">{{action}}</button><hr/></div>")
+      var template = Handlebars.compile($('#my-assets-list-tempate').html());
       $(".my__list").html('')
       assets.forEach((asset, index) => {
         let found = forSale.filter(item => { return item.chainId == assets[index].chainId && item.contract == assets[index].contract && item.tokenId == assets[index].tokenId }).length > 0
-        $(".my__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: found ? 'unlist' : 'list', buttonStyle: found ? 'warning' : 'success', media: asset.animation_url ? "video loop autoplay" : "img" }))
+        $(".my__list").append(template({ animation_url: asset.animation_url, name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: found ? 'unlist' : 'list', buttonStyle: found ? 'warning' : 'success'}))
       })
     }
 
     function displayForSaleAssets() {
-      var template = Handlebars.compile("<div id=\"forSale-{{index}}\"><{{media}} class=\"asset_thumb\" src=\"{{thumb}}\"/><p>{{name}}</p> <button type=\"button\" class=\"btn btn-primary\" onclick=\"offerAsset(forSale[{{index}}])\">{{action}}</button><hr/></div>")
+      var template = Handlebars.compile($('#for-sale-list-tempate').html());
       $(".forsale__list").html('')
       forSale.forEach((asset, index) => {
         let found = assets.filter(item => { return item.chainId == forSale[index].chainId && item.contract == forSale[index].contract && item.tokenId == forSale[index].tokenId }).length > 0
         if (!found) {
-          $(".forsale__list").append(template({ name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer', media: asset.animation_url ? "video loop autoplay" : "img" }))
+          $(".forsale__list").append(template({ animation_url: asset.animation_url, name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer' }))
         }
       })
+    }
+
+    function displayAssetList(assets, where, template = '#asset-list-tempate') {
+      var template = Handlebars.compile($(template).html());
+      $(where).html('')
+      assets.forEach((asset, index) => {
+        // let found = assets.filter(item => { return item.chainId == forSale[index].chainId && item.contract == forSale[index].contract && item.tokenId == forSale[index].tokenId }).length > 0
+        // if (!found) {
+          $(where).append(template({ animation_url: asset.animation_url, name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer' }))
+        // }
+      })
+    }
+
+    async function want(asset) {
+      let assetNode = await assetToNode(asset)
+      if (!assetNode) {
+        addAsset(asset)
+        return want(asset)
+      } else {
+        let alias = asset.contract + ":" + asset.tokenId
+        gun.user().get("asks").get(alias).put(assetNode)
+      }
+      
+    }
+
+    async function assetToNode(asset){
+      let found = await gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).get(asset.chainId).get("contracts").get(asset.contract+":"+asset.tokenId)
+      if (found) {
+        return await found
+      } else return false
     }
 
     async function refreshMetamask() {
@@ -436,6 +661,14 @@
           eth_accounts: {},
         }]
       });
+    }
+
+    function search(){
+      let searchAddress = $(".searchAddress").val()
+      getOpenSeaAssets(assets=>{ 
+        searchResults = convertOpenSeaToGun(assets)
+        displayAssetList(searchResults, '.search__list', '#search-tempate')
+      }, 100, 50, searchAddress)
     }
 
     function popModal(asset) {
@@ -473,6 +706,10 @@
       }
       let asset = assets[offeringAsset]
       $(".offer_image").attr("src", asset.image_url)
+      if (asset.animation_url) {
+        $(".offer_image_animation").attr("src", asset.animation_url)
+      }
+      
       $(".offer-display-name").text(asset.name)
       $(".offer-display-name").attr('data-original-title', asset.name)
     }
