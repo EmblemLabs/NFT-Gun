@@ -59,6 +59,9 @@
     <li class="nav-item">
       <a class="nav-link" id="search-tab" data-toggle="tab" href="#search" role="tab" aria-controls="search" aria-selected="false">Search</a>
     </li>
+    <li class="nav-item">
+      <a class="nav-link" id="users-tab" data-toggle="tab" href="#users" role="tab" aria-controls="users" aria-selected="false">Users</a>
+    </li>
   </ul>
   <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -71,9 +74,12 @@
       <div class="wants__list" style="width: 50%; float: left; padding:10px"></div>
     </div>
     <div class="tab-pane fade show" id="search" role="tabpanel" aria-labelledby="search-tab">
-      <input class="searchAddress" style="margin: 10" type="text" value="0xDEADBEEF"/>
+      <input class="searchAddress" style="margin: 10" type="text" value="" placeholder="Eth Address"/>
       <button onclick="search()">Fetch</button>
       <div class="search__list" style="width: 50%; float: left; padding:10px"></div>
+    </div>
+    <div class="tab-pane fade show" id="users" role="tabpanel" aria-labelledby="users-tab">
+      <div class="users__list" style="width: 50%; float: left; padding:10px"></div>
     </div>
   </div>
 
@@ -163,50 +169,54 @@
     let forSale = []
     let users = {}, blockchains = {}, asks={}, me, ROOT, DATA_PATH, USER_DATABASE, CHAIN_DB, signature, userAlias, searchResults
 
-    ethereum.on('accountsChanged', function (accounts) {
-      console.log("changed")
-      location.reload()
-      getOpenSeaAssets(_assets => {
-        assets = convertOpenSeaToGun(_assets)
-        displayMyAssets()
-      })
-    })
+    function cryptoEnabled() {
+      return typeof ethereum !== 'undefined'
+    }
 
+
+
+    if (cryptoEnabled()) {
+      ethereum.on('accountsChanged', function (accounts) {
+        console.log("changed")
+        location.reload()
+        getOpenSeaAssets(_assets => {
+          assets = convertOpenSeaToGun(_assets)
+          displayMyAssets()
+        })
+      })
+    }
 
     init()
 
     function init() {
       getRemoteGunPaths(async () => {
-        connect(() => {
-          getOpenSeaAssets(_assets => {
-            assets = convertOpenSeaToGun(_assets)
-            gun.user().get("asks").open(all=>{
-              asks = getGunCollectionAsList(all)
-              displayAssetList(asks, '.wants__list')
+        if (cryptoEnabled()) { 
+          connect(() => {
+            getOpenSeaAssets(_assets => {
+              assets = convertOpenSeaToGun(_assets)
+              gun.user().get("asks").open(all=>{
+                asks = getGunCollectionAsList(all)
+                displayAssetList(asks, '.wants__list')
+              })
+              displayMyAssets()
             })
-            displayMyAssets()
           })
-        })
+        }
+
+        
+        
         gun.get(ROOT).map().get(DATA_PATH).get(USER_DATABASE).open(all => {
           users = all
+          displayUsersList(getGunCollectionAsList(users), '.users__list', '#users-tempate')
         })
         gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).open(all => {
           blockchains = all
         })
 
 
-      gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).map().get("contracts").open(item => {
+        gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).map().get("contracts").open(item => {
           forSale = getGunCollectionAsList(item)
                       .filter(item=>{return item['For Sale'] == true})
-          // forSale = []
-          // Object.keys(item).forEach(k => {
-          //   if (item[k]['For Sale']) {
-          //     let unique = forSale.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
-          //     if (unique) {
-          //       forSale.push(item[k])
-          //     }
-          //   }
-          // })
           displayMyAssets()
           displayForSaleAssets()
         })
@@ -220,36 +230,6 @@
       })
       return list
     }
-
-    // function getGunCollectionAsList(path, filter, cb){
-    //   // gun.get(ROOT).map().get(DATA_PATH).get(CHAIN_DB).map().get("contracts").open(item => {
-    //     gun.get(ROOT).map().path(path).open(item => {
-    //       collection = []
-    //       Object.keys(item).forEach(k => {
-    //         if (filter) {
-    //           if(item[k][filter]) {
-    //             let unique = collection.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
-    //             if (unique) {
-    //               collection.push(item[k])
-    //             }
-    //           }
-    //         } else {
-    //           let unique = collection.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
-    //             if (unique) {
-    //               collection.push(item[k])
-    //             }
-    //         }
-    //         // if (item[k]['For Sale']) {
-    //         //   let unique = collection.filter(f => { return f.tokenId == item[k].tokenId }).length < 1
-    //         //   if (unique) {
-    //         //     collection.push(item[k])
-    //         //   }
-    //         // }
-    //       })
-    //       return cb(collection)
-          
-    //     })
-    // }
 
     function connect(cb) {
       ethereum
@@ -265,8 +245,18 @@
           } else {
             registerAccounts()
           }
-          
-          function registerAccounts(){
+        })
+        .catch((err) => {
+          if (err.code === 4001) {
+            // EIP-1193 userRejectedRequest error
+            // If this happens, the user rejected the connection request.
+            console.log('Please connect to MetaMask.');
+          } else {
+            console.error(err);
+          }
+        });
+
+        function registerAccounts(){
             userAlias = account + ':'+ DATA_PATH + '2'
             createOrAuthUser(userAlias, signature, async ()=>{            
               let anyUsers = await gun.path(ROOT).map().get(DATA_PATH).map()
@@ -284,18 +274,6 @@
               }
             })
           }
-          
-          
-        })
-        .catch((err) => {
-          if (err.code === 4001) {
-            // EIP-1193 userRejectedRequest error
-            // If this happens, the user rejected the connection request.
-            console.log('Please connect to MetaMask.');
-          } else {
-            console.error(err);
-          }
-        });
     }
 
     function getPublicKey(cb) {
@@ -442,7 +420,9 @@ async function authUser(alias, password, cb){
 
       fetch("https://api.opensea.io/api/v1/assets?owner=" + address + "&order_direction=desc&offset=" + offset + "&limit=" + limit, requestOptions)
         .then(response => response.json())
-        .then(result => { return cb(result) })
+        .then(result => { 
+          return cb(result)
+        })
         .catch(error => console.log('error', error));
     }
 
@@ -481,7 +461,7 @@ async function authUser(alias, password, cb){
     function addAsset(asset) {
       var myHeaders = new Headers();
       myHeaders.append("Content-Type", "application/json");
-      if (!signature) {
+      if (!signature && cryptoEnabled()) {
         sign(sig => {
           signature = sig
           return performCall()
@@ -601,6 +581,13 @@ async function authUser(alias, password, cb){
     </div>
   </script>
 
+  <script id="users-tempate" type="text/x-handlebars-template">
+    <div id="asset-{{index}}">
+      <p><a href="#search?address={{asset.address}}" onclick="navAndSearchForAddress('{{asset.address}}', {{index}})">{{asset.address}}</a></p>
+      <hr/>
+    </div>
+  </script>
+
   <script>
     let offeringAsset = 0
 
@@ -628,10 +615,18 @@ async function authUser(alias, password, cb){
       var template = Handlebars.compile($(template).html());
       $(where).html('')
       assets.forEach((asset, index) => {
-        // let found = assets.filter(item => { return item.chainId == forSale[index].chainId && item.contract == forSale[index].contract && item.tokenId == forSale[index].tokenId }).length > 0
-        // if (!found) {
           $(where).append(template({ animation_url: asset.animation_url, name: asset.name, thumb: asset.image_thumbnail_url, index: index, action: 'Make Offer' }))
-        // }
+      })
+    }
+
+    function displayUsersList(assets, where, template = '#users-tempate') {
+      var template = Handlebars.compile($(template).html());
+      $(where).html('')
+      assets.forEach((asset, index) => {
+          // console.log(asset, index)
+          if (asset.address && asset.address !== '0x5D152dd902CC9198B97E5b6Cf5fc23a8e4330180') {
+            $(where).append(template({ asset, index: index }))
+          }
       })
     }
 
@@ -642,9 +637,17 @@ async function authUser(alias, password, cb){
         return want(asset)
       } else {
         let alias = asset.contract + ":" + asset.tokenId
-        gun.user().get("asks").get(alias).put(assetNode)
+        if(cryptoEnabled()){
+          gun.user().get("asks").get(alias).put(assetNode)
+        }
       }
-      
+    }
+
+    function navAndSearchForAddress(address, index) {
+      $("#search-tab").tab('show')
+      $(".searchAddress").val(address)
+      console.log(getGunCollectionAsList(users)[index])
+      search()
     }
 
     async function assetToNode(asset){
@@ -668,7 +671,7 @@ async function authUser(alias, password, cb){
       getOpenSeaAssets(assets=>{ 
         searchResults = convertOpenSeaToGun(assets)
         displayAssetList(searchResults, '.search__list', '#search-tempate')
-      }, 100, 50, searchAddress)
+      }, 0, 50, searchAddress)
     }
 
     function popModal(asset) {
