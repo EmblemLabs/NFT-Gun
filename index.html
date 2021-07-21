@@ -95,10 +95,13 @@
         <a class="nav-link" id="wants-tab" data-toggle="tab" href="#wants" role="tab" aria-controls="wants" aria-selected="false">Wants</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" id="search-tab" data-toggle="tab" href="#search" role="tab" aria-controls="search" aria-selected="false">Search</a>
+        <a class="nav-link" id="search-tab" data-toggle="tab" href="#search" role="tab" aria-controls="search" aria-selected="false">Address Search</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" id="users-tab" data-toggle="tab" href="#users" role="tab" aria-controls="users" aria-selected="false">Users</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="following-tab" data-toggle="tab" href="#following" role="tab" aria-controls="following" aria-selected="false">Following</a>
       </li>
     </ul>
     <div class="tab-content" id="myTabContent">
@@ -112,12 +115,16 @@
         <div class="wants__list" style="width: 50%; float: left; padding:10px"></div>
       </div>
       <div class="tab-pane fade show" id="search" role="tabpanel" aria-labelledby="search-tab">
-        <input class="searchAddress" style="margin: 10" type="text" value="" placeholder="Eth Address"/>
-        <button onclick="search()">Fetch</button>
+        <input class="searchAddress form-control mr-sm-2" style="margin: 10" type="text" value="" placeholder="Eth Address"/>
+        <button class="btn" onclick="search()">Fetch</button>
+        <button class="btn" onclick="follow()">Follow</button>
         <div class="search__list" style="width: 50%; float: left; padding:10px"></div>
       </div>
       <div class="tab-pane fade show" id="users" role="tabpanel" aria-labelledby="users-tab">
         <div class="users__list" style="width: 50%; float: left; padding:10px"></div>
+      </div>
+      <div class="tab-pane fade show" id="following" role="tabpanel" aria-labelledby="following-tab">
+        <div class="following__list" style="width: 50%; float: left; padding:10px"></div>
       </div>
     </div>
   </div>
@@ -206,7 +213,7 @@
     let accounts = []
     let assets = []
     let forSale = []
-    let users = {}, blockchains = {}, asks={}, me, ROOT, DATA_PATH, USER_DATABASE, CHAIN_DB, signature, userAlias, searchResults
+    let users = {}, blockchains = {}, asks={}, following={}, me, ROOT, DATA_PATH, USER_DATABASE, CHAIN_DB, signature, userAlias, searchResults
 
     function cryptoEnabled() {
       return typeof ethereum !== 'undefined'
@@ -236,6 +243,11 @@
               gun.user().get("asks").open(all=>{
                 asks = getGunCollectionAsList(all)
                 displayAssetList(asks, '.wants__list')
+              })
+              gun.user().get("friends").open(all=>{
+                delete all._
+                following = Object.keys(all).map(item=>{return {address: item}})
+                displayUsersList(following, '.following__list')
               })
               displayMyAssets()
             })
@@ -682,6 +694,13 @@ async function authUser(alias, password, cb){
         if(cryptoEnabled()){
           gun.user().get("asks").get(alias).put(assetNode)
         }
+      }
+    }
+
+    async function follow() {
+      let address = $(".searchAddress").val()
+      if(cryptoEnabled()){
+        await gun.user().get("friends").get(address).put(address)
       }
     }
 
