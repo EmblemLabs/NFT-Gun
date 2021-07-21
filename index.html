@@ -5,6 +5,7 @@
   <!-- <link rel="stylesheet" type="text/css" href="/style.css"> -->
   <link href='https://fonts.googleapis.com/css?family=Alegreya+Sans:300italic' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link href="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css" rel="stylesheet"/>
 
   <style>
     .asset_thumb {
@@ -203,6 +204,7 @@
   <script src="//cdn.jsdelivr.net/npm/circular-json@0.5.9/build/circular-json.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/web3/3.0.0-rc.5/web3.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
 
 
   <script>
@@ -359,8 +361,9 @@
     }
 
     function registerAccount() {
-      getPublicKey(pubKey => {
-        console.log('pubKey', pubKey)
+      // getPublicKey(pubKey => {
+        let pubkey = "0x0"
+        // console.log('pubKey', pubKey)
         setTimeout(() => {
           sign(sig => {
             signature = sig
@@ -369,7 +372,7 @@
             })
           })
         }, 1000)
-      })
+      // })
     }
 
     async function createOrAuthUser(alias, password, cb) {
