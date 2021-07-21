@@ -208,7 +208,7 @@
   <script>
 
     let gun = Gun(['https://emblem-gun.herokuapp.com/gun']);
-    let API = 'https://gun-api-ev.herokuapp.com'//'http://127.0.0.1:3000'//'https://gun-api-ev.herokuapp.com'
+    let API = 'http://127.0.0.1:3000'//'https://gun-api-ev.herokuapp.com'
     let loggedIn = false
     let accounts = []
     let assets = []
@@ -269,7 +269,7 @@
           forSale = getGunCollectionAsList(item)
                       .filter(item=>{return item['For Sale'] == true})
           displayMyAssets()
-          displayForSaleAssets() 
+          displayForSaleAssets()
         })
       })
     }
@@ -686,7 +686,7 @@ async function authUser(alias, password, cb){
 
     async function want(asset) {
       let assetNode = await assetToNode(asset)
-      if (!assetNode) {
+      if (!assetNode && !asset['For Sale']) {
         addAsset(asset)
         return want(asset)
       } else {
