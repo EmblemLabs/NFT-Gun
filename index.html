@@ -45,42 +45,80 @@
 </head>
 
 <body>
-  <div style="text-align:right;margin:5px;" class="account-display"></div>
-  <button style="float:right;margin:10" id="connectButton" onclick="refreshMetamask()">Connect</button>
-  <ul class="nav nav-tabs" id="myTab" role="tablist">
-    <li class="nav-item">
-      <a class="nav-link" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="false">My NFT's</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="true">For Sale</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" id="wants-tab" data-toggle="tab" href="#wants" role="tab" aria-controls="wants" aria-selected="false">Wants</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" id="search-tab" data-toggle="tab" href="#search" role="tab" aria-controls="search" aria-selected="false">Search</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" id="users-tab" data-toggle="tab" href="#users" role="tab" aria-controls="users" aria-selected="false">Users</a>
-    </li>
-  </ul>
-  <div class="tab-content" id="myTabContent">
-    <div class="tab-pane fade" id="home" role="tabpanel" aria-labelledby="home-tab">
-      <div class="my__list" style="width: 50%; float: left;padding:10px"></div>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand mb-0 h1" href="#">NFT²NFT</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item active">
+          <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+        </li>
+        <!-- <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li> -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Account
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="#">Profile</a>
+            <a class="dropdown-item" href="#">DAO</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#">Something else here</a>
+          </div>
+        </li>
+        <li class="nav-item">
+          <a class="account-display nav-link disabled" href="#"></a>
+        </li>
+      </ul>
+      <form class="form-inline my-2 my-lg-0">
+        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+        <button class="btn btn-outline-success my-2 my-sm-0" style="float:right;margin:10" id="connectButton" onclick="refreshMetamask()">Connect</button>
+      </form>
     </div>
-    <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-      <div class="forsale__list" style="width: 50%; float: left; padding:10px"></div>
-    </div>
-    <div class="tab-pane fade show" id="wants" role="tabpanel" aria-labelledby="wants-tab">
-      <div class="wants__list" style="width: 50%; float: left; padding:10px"></div>
-    </div>
-    <div class="tab-pane fade show" id="search" role="tabpanel" aria-labelledby="search-tab">
-      <input class="searchAddress" style="margin: 10" type="text" value="" placeholder="Eth Address"/>
-      <button onclick="search()">Fetch</button>
-      <div class="search__list" style="width: 50%; float: left; padding:10px"></div>
-    </div>
-    <div class="tab-pane fade show" id="users" role="tabpanel" aria-labelledby="users-tab">
-      <div class="users__list" style="width: 50%; float: left; padding:10px"></div>
+  </nav>
+  
+  <!-- <div style="text-align:right;margin:5px;" class="address-display"></div> -->
+  <div class="container">
+    <ul style="margin-top:10px" class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="false">My NFT's</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="true">For Sale</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="wants-tab" data-toggle="tab" href="#wants" role="tab" aria-controls="wants" aria-selected="false">Wants</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="search-tab" data-toggle="tab" href="#search" role="tab" aria-controls="search" aria-selected="false">Search</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="users-tab" data-toggle="tab" href="#users" role="tab" aria-controls="users" aria-selected="false">Users</a>
+      </li>
+    </ul>
+    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade" id="home" role="tabpanel" aria-labelledby="home-tab">
+        <div class="my__list" style="width: 50%; float: left;padding:10px"></div>
+      </div>
+      <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        <div class="forsale__list" style="width: 50%; float: left; padding:10px"></div>
+      </div>
+      <div class="tab-pane fade show" id="wants" role="tabpanel" aria-labelledby="wants-tab">
+        <div class="wants__list" style="width: 50%; float: left; padding:10px"></div>
+      </div>
+      <div class="tab-pane fade show" id="search" role="tabpanel" aria-labelledby="search-tab">
+        <input class="searchAddress" style="margin: 10" type="text" value="" placeholder="Eth Address"/>
+        <button onclick="search()">Fetch</button>
+        <div class="search__list" style="width: 50%; float: left; padding:10px"></div>
+      </div>
+      <div class="tab-pane fade show" id="users" role="tabpanel" aria-labelledby="users-tab">
+        <div class="users__list" style="width: 50%; float: left; padding:10px"></div>
+      </div>
     </div>
   </div>
 
