@@ -210,7 +210,7 @@
   <script>
 
     let gun = Gun(['https://emblem-gun.herokuapp.com/gun']);
-    let API = 'https://gun-api-ev.herokuapp.com'//'http://127.0.0.1:3000'//'https://gun-api-ev.herokuapp.com'
+    let API = 'https://gun-api-ev.herokuapp.com'//'http://127.0.0.1:3001'//
     let loggedIn = false
     let accounts = []
     let assets = []
@@ -252,7 +252,7 @@
                 displayUsersList(following, '.following__list')
               })
               displayMyAssets()
-            })
+            }, 0, 50, account)
           })
         }
 
@@ -311,7 +311,7 @@
         });
 
         function registerAccounts(){
-            userAlias = account + ':'+ DATA_PATH + '2'
+            userAlias = account + ':'+ DATA_PATH
             createOrAuthUser(userAlias, signature, async ()=>{            
               let anyUsers = await gun.path(ROOT).map().get(DATA_PATH).map()
               if (anyUsers) {
@@ -367,7 +367,7 @@
         setTimeout(() => {
           sign(sig => {
             signature = sig
-            sendRegistrationRequest(pubKey, sig, () => {
+            sendRegistrationRequest(pubkey, sig, () => {
               init()
             })
           })
@@ -406,8 +406,13 @@ async function authUser(alias, password, cb){
     console.log("alias", alias)
     console.log("password", password)
     // setTimeout(()=>{
-      await gun.user().auth(alias, password, _user=>{
-        console.log("--------------------------------","Authed")
+      await gun.user().auth(alias, password, async _user=>{
+        if (_user.err) {
+          setTimeout(()=>{
+            return authUser(alias, password, cb)
+          }, 500)
+        }
+        console.log("--------------------------------","Authed", _user)
         nodeUser = gun.user()
         console.log("--------------------------------", "Node User", nodeUser)
         return cb()
